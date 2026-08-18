@@ -228,3 +228,7 @@ That's part of the process. Before asking for help, try:
 4. Asking a teammate
 
 Good luck — you've got this. 🛠️
+
+<!-- TechFlow automated deployment verified -->
+
+<!-- Pull-request CI validation enabled -->
