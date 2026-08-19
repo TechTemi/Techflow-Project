@@ -230,5 +230,6 @@ That's part of the process. Before asking for help, try:
 Good luck — you've got this. 🛠️
 
 <!-- TechFlow automated deployment verified -->
+<!-- TechFlow production promotion deployment verified -->
 
 <!-- Pull-request CI validation enabled -->
