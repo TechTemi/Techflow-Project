@@ -68,7 +68,9 @@ jobs:
             Branch: ${{ github.ref_name }}
             Commit: ${{ github.sha }}
             Actor: ${{ github.actor }}
-            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            Run:
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
   # ============================================================
   # BUILD AND PUSH
@@ -164,7 +166,9 @@ jobs:
             Branch: ${{ github.ref_name }}
             Commit: ${{ github.sha }}
             Actor: ${{ github.actor }}
-            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            Run:
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
   # ============================================================
   # DEPLOY
@@ -187,6 +191,8 @@ jobs:
       STABLE_TAG: ${{ github.ref_name == 'main' && 'previous_stable' || 'previous_stable_staging' }}
 
       DEPLOY_ENVIRONMENT: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+
+      APP_URL: "http://${{ github.ref_name == 'main' && secrets.EC2_HOST || secrets.STAGING_EC2_HOST }}"
 
     steps:
       # --------------------------------------------------------
@@ -237,6 +243,7 @@ jobs:
           DEPLOY_TAG: ${{ env.DEPLOY_TAG }}
           STABLE_TAG: ${{ env.STABLE_TAG }}
           DEPLOY_ENVIRONMENT: ${{ env.DEPLOY_ENVIRONMENT }}
+
         with:
           host: ${{ github.ref_name == 'main' && secrets.EC2_HOST || secrets.STAGING_EC2_HOST }}
           username: ubuntu
@@ -245,6 +252,7 @@ jobs:
           timeout: 60s
           command_timeout: 10m
           envs: DOCKERHUB_USERNAME,DOCKERHUB_TOKEN,IMAGE_REPO,DEPLOY_TAG,STABLE_TAG,DEPLOY_ENVIRONMENT
+
           script: |
             set -euo pipefail
 
@@ -343,8 +351,8 @@ jobs:
 
             if "${HEALTH_CHECK_SCRIPT}" "http://localhost/health"; then
               echo "PASS: ${DEPLOY_ENVIRONMENT} deployment is healthy."
-
               echo "Currently running container:"
+
               docker ps \
                 --filter "name=^/${CONTAINER_NAME}$"
 
@@ -395,19 +403,101 @@ jobs:
           secure: true
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_APP_PASSWORD }}
-          subject: "TechFlow CI/CD SUCCESS — ${{ github.ref_name }}"
+
+          subject: "🚀 TechFlow CI/CD SUCCESS — ${{ env.DEPLOY_ENVIRONMENT }}"
+
           to: ${{ secrets.NOTIFY_EMAIL }}
+
           from: "TechFlow CI/CD <${{ secrets.EMAIL_USERNAME }}>"
+
           body: |
             TechFlow deployment completed successfully.
 
+            Your app is live at:
+            ${{ env.APP_URL }}
+
+            Deployment Details
+            ------------------
             Repository: ${{ github.repository }}
             Environment: ${{ env.DEPLOY_ENVIRONMENT }}
             Branch: ${{ github.ref_name }}
             Commit: ${{ github.sha }}
             Image: ${{ env.IMAGE_REPO }}:${{ env.DEPLOY_TAG }}
             Actor: ${{ github.actor }}
-            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            Workflow run:
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+          html_body: |
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <meta charset="UTF-8">
+                <title>TechFlow Deployment Successful</title>
+              </head>
+
+              <body>
+                <h2>🚀 TechFlow Deployment Successful</h2>
+
+                <p>
+                  The
+                  <strong>${{ env.DEPLOY_ENVIRONMENT }}</strong>
+                  deployment completed successfully and passed the
+                  post-deployment health check.
+                </p>
+
+                <p>
+                  <strong>Your app is live at:</strong>
+                </p>
+
+                <p>
+                  <a href="${{ env.APP_URL }}">
+                    ${{ env.APP_URL }}
+                  </a>
+                </p>
+
+                <hr>
+
+                <h3>Deployment Details</h3>
+
+                <p>
+                  <strong>Repository:</strong>
+                  ${{ github.repository }}
+                  <br>
+
+                  <strong>Environment:</strong>
+                  ${{ env.DEPLOY_ENVIRONMENT }}
+                  <br>
+
+                  <strong>Branch:</strong>
+                  ${{ github.ref_name }}
+                  <br>
+
+                  <strong>Commit:</strong>
+                  ${{ github.sha }}
+                  <br>
+
+                  <strong>Image:</strong>
+                  ${{ env.IMAGE_REPO }}:${{ env.DEPLOY_TAG }}
+                  <br>
+
+                  <strong>Actor:</strong>
+                  ${{ github.actor }}
+                </p>
+
+                <p>
+                  <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">
+                    View GitHub Actions workflow run
+                  </a>
+                </p>
+
+                <hr>
+
+                <p>
+                  TechFlow CI/CD Pipeline
+                </p>
+              </body>
+            </html>
 
       # --------------------------------------------------------
       # Deployment failure notification
@@ -422,9 +512,13 @@ jobs:
           secure: true
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_APP_PASSWORD }}
+
           subject: "TechFlow CI/CD FAILED — Deploy — ${{ github.ref_name }}"
+
           to: ${{ secrets.NOTIFY_EMAIL }}
+
           from: "TechFlow CI/CD <${{ secrets.EMAIL_USERNAME }}>"
+
           body: |
             TechFlow deployment failed.
 
@@ -436,4 +530,6 @@ jobs:
             Branch: ${{ github.ref_name }}
             Commit: ${{ github.sha }}
             Actor: ${{ github.actor }}
-            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            Run:
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
